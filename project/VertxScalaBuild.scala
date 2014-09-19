@@ -1,5 +1,8 @@
 import sbt._
 import sbt.Keys._
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 
 object VertxScalaBuild extends Build {
 
@@ -12,10 +15,22 @@ object VertxScalaBuild extends Build {
     description         := "Vert.x module that provides Scala support"
   )
 
+  lazy val mimaSettings = mimaDefaultSettings ++ Seq(
+    previousArtifact := Some("io.vertx" % "lang-scala" % "1.0.0"),
+    binaryIssueFilters ++= ignoredABIProblems
+  )
+
+  val ignoredABIProblems = {
+    import com.typesafe.tools.mima.core._
+    import com.typesafe.tools.mima.core.ProblemFilters._
+    Seq(exclude[MissingMethodProblem]("org.vertx.scala.lang.ScalaInterpreter.org$vertx$scala$lang$ScalaInterpreter$$addImports"),
+      exclude[InaccessibleMethodProblem]("org.vertx.scala.testtools.ScalaClassRunner.computeTestMethods"))
+  }
+
   lazy val project = Project (
     "project",
     file ("."),
-    settings = baseSettings ++ Seq(
+    settings = baseSettings ++ mimaSettings ++ Seq(
       copyModTask,
       zipModTask,
       libraryDependencies ++= Dependencies.compile,
